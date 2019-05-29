@@ -91,12 +91,31 @@ Node *term() {
       "数値でも開き括弧でもないトークンです");
 }
 
+Node *relational() {
+  Node *node = add();
+
+  for (;;) {
+    if (consume('<'))
+      node = new_node('<', node, add());
+    else if (consume(TK_LE))
+      node = new_node(TK_LE, node, add());
+    else if (consume('>'))
+      node = new_node('>', node, add());
+    else if (consume(TK_GE))
+      node = new_node(TK_GE, node, add());
+    else
+      return node;
+  }
+}
+
 Node *add() {
   Node *node = mul();
 
   for (;;) {
-    if (consume('<'))
-      node = new_node('<', node, mul());
+    if (consume('+'))
+      node = new_node('+', node, mul());
+    else if (consume('-'))
+      node = new_node('-', node, mul());
     else
       return node;
   }
@@ -116,7 +135,8 @@ Node *mul() {
 }
 
 Node *expr() {
-  Node *node = mul();
+  Node *node = relational();
+  return  node;
 
   for (;;) {
     if (consume('+'))
@@ -166,6 +186,22 @@ void gen(Node *node) {
       printf("  cmp rax, rdi\n");
       printf("  setl al\n");
       printf("  movzb rax, al\n");
+      break;
+    case TK_LE:
+      printf("  cmp rax, rdi\n");
+      printf("  setle al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case '>':
+      printf("  cmp rdi, rax\n");
+      printf("  setl al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case TK_GE:
+      printf("  cmp rdi, rax\n");
+      printf("  setle al\n");
+      printf("  movzb rax, al\n");
+      break;
     }
 
     printf("  push rax\n");
@@ -190,8 +226,28 @@ void tokenize() {
     }
     
     if (*p == '<') {
-      tokens[i].ty = *p;
-      tokens[i].input = p;
+      if (*(p + 1) == '=') {
+        tokens[i].ty = TK_LE;
+        tokens[i].input = p++;
+      }
+      else {
+        tokens[i].ty = *p;
+        tokens[i].input = p;
+      }
+      i++;
+      p++;
+      continue;
+    }
+   
+    if (*p == '>') {
+      if (*(p + 1) == '=') {
+        tokens[i].ty = TK_GE;
+        tokens[i].input = p++;
+      }
+      else {
+        tokens[i].ty = *p;
+        tokens[i].input = p;
+      }
       i++;
       p++;
       continue;
