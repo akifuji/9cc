@@ -3,22 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-enum {
-  TK_NUM = 256, 
-  TK_EOF,
-  TK_EQ,
-  TK_NE,
-  TK_LE,
-  TK_GE,
-};
-
-typedef struct Node {
-  int ty;
-  struct Node *lhs;
-  struct Node *rhs;
-  int val;
-} Node;
+#include "9cc.h"
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
@@ -47,26 +32,8 @@ Node *mul();
 Node *unary();
 Node *term();
 
-char *user_input;
 Token tokens[100];
 int pos = 0;
-
-void error(char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-  vfprintf(stderr, fmt, ap);
-  fprintf(stderr, "\n");
-  exit(1);
-}
-
-void error_at(char *loc, char *msg) {
-  int pos = loc - user_input;
-  fprintf(stderr, "%s\n", user_input);
-  fprintf(stderr, "%*s", pos, "");
-  fprintf(stderr, "^ %s\n", msg);
-  exit(1);
-}
-
 
 int consume(int ty) {
   if (tokens[pos].ty != ty)
@@ -156,56 +123,6 @@ Node *unary() {
   return term();
 }
 
-void gen(Node *node) {
-  if (node->ty == TK_NUM) {
-    printf("  push %d\n", node->val);
-    return;
-  }
-
-  gen(node->lhs);
-  gen(node->rhs);
-
-  printf("  pop rdi\n");
-  printf("  pop rax\n");
-
-  switch (node->ty) {
-    case '+':
-      printf("  add rax, rdi\n");
-      break;
-    case '-':
-      printf("  sub rax, rdi\n");
-      break;
-    case '*':
-      printf("  imul rdi\n");
-      break;
-    case '/':
-      printf("  cqo\n");
-      printf("  idiv rdi\n");
-      break;
-    case '<':
-      printf("  cmp rax, rdi\n");
-      printf("  setl al\n");
-      printf("  movzb rax, al\n");
-      break;
-    case TK_LE:
-      printf("  cmp rax, rdi\n");
-      printf("  setle al\n");
-      printf("  movzb rax, al\n");
-      break;
-    case '>':
-      printf("  cmp rdi, rax\n");
-      printf("  setl al\n");
-      printf("  movzb rax, al\n");
-      break;
-    case TK_GE:
-      printf("  cmp rdi, rax\n");
-      printf("  setle al\n");
-      printf("  movzb rax, al\n");
-      break;
-    }
-
-    printf("  push rax\n");
-}
 
 void tokenize() {
   char *p = user_input;
@@ -266,25 +183,4 @@ void tokenize() {
 
   tokens[i].ty = TK_EOF;
   tokens[i].input = p;
-}
-
-int main(int argc, char **argv) {
-  if (argc != 2) {
-    error("引数の個数が正しくありません");
-    return 1;
-  }
-
-  user_input = argv[1];
-  tokenize(user_input);
-  Node *node = expr();
-
-  printf(".intel_syntax noprefix\n");
-  printf(".global main\n");
-  printf("main:\n");
-
-  gen(node);
-
-  printf("  pop rax \n");
-  printf("  ret\n");
-  return 0;
 }
