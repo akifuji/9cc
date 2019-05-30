@@ -27,6 +27,8 @@ typedef struct {
 } Token;
 
 Node *expr();
+Node *equality();
+Node *relational();
 Node *add();
 Node *mul();
 Node *unary();
@@ -58,6 +60,19 @@ Node *term() {
       "数値でも開き括弧でもないトークンです");
 }
 
+Node *equality() {
+  Node *node = relational();
+
+  for (;;) {
+    if (consume(TK_EQ))
+      node = new_node(TK_EQ, node, relational());
+    else if (consume(TK_NE))
+      node = new_node(TK_NE, node, relational());
+    else
+      return node;
+  }
+}
+
 Node *relational() {
   Node *node = add();
 
@@ -67,9 +82,9 @@ Node *relational() {
     else if (consume(TK_LE))
       node = new_node(TK_LE, node, add());
     else if (consume('>'))
-      node = new_node('>', node, add());
+      node = new_node('<', add(), node);
     else if (consume(TK_GE))
-      node = new_node(TK_GE, node, add());
+      node = new_node(TK_LE, add(), node);
     else
       return node;
   }
@@ -102,7 +117,7 @@ Node *mul() {
 }
 
 Node *expr() {
-  Node *node = relational();
+  Node *node = equality();
   return  node;
 
   for (;;) {
@@ -133,6 +148,28 @@ void tokenize() {
       p++;
       continue;
     } 
+
+    if (*p == '=') {
+      if (*(p + 1) == '=') {
+        tokens[i].ty = TK_EQ;
+        tokens[i].input = p++;
+        i++;
+        p++;
+        continue;
+      }
+    }
+ 
+    if (*p == '!') {
+      if (*(p + 1) == '=') {
+        tokens[i].ty = TK_NE;
+        tokens[i].input = p++;
+        i++;
+        p++;
+        continue;
+      } else {
+        error_at(p, "'='が続くべきです");
+      }
+    }    
 
     if (*p == '(' || *p == ')' || *p == '*' || *p == '/' || *p == '+' || *p == '-') {
       tokens[i].ty = *p;
