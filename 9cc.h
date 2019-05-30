@@ -8,6 +8,12 @@ enum {
   TK_NE,
   TK_LE,
   TK_GE,
+  TK_IDENT,
+};
+
+enum {
+  ND_NUM = 256,
+  ND_IDENT,
 };
 
 typedef struct Node {
@@ -15,11 +21,13 @@ typedef struct Node {
   struct Node *lhs;
   struct Node *rhs;
   int val;
+  char name;
 } Node;
 
 char *user_input;
+Node *code[100];
 void tokenize();
-Node *expr();
+Node *program();
 void gen(Node *node);
 void error(char *fmt, ...);
 void error_at(char *loc, char *msg);

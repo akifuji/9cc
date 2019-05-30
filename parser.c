@@ -15,24 +15,25 @@ Node *new_node(int ty, Node *lhs, Node *rhs) {
 
 Node *new_node_num(int val) {
   Node *node = malloc(sizeof(Node));
-  node->ty = TK_NUM;
+  node->ty = ND_NUM;
   node->val = val;
   return node;
 }
+
+Node *new_node_ident(char name) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_IDENT;
+  node->name = name;
+  return node;
+}
+
+
 
 typedef struct {
   int ty;      
   int val;    
   char *input;
 } Token;
-
-Node *expr();
-Node *equality();
-Node *relational();
-Node *add();
-Node *mul();
-Node *unary();
-Node *term();
 
 Token tokens[100];
 int pos = 0;
@@ -44,20 +45,39 @@ int consume(int ty) {
   return 1;
 }
 
-Node *term() {
-  if (consume('(')) {
-    Node *node = expr();
-    if (!consume(')'))
-      error_at(tokens[pos].input,
-        "開き括弧に対応する閉じ括弧がありません");
-    return node;
-  }
+Node *stmt();
+Node *expr();
+Node *assign();
+Node *equality();
+Node *relational();
+Node *add();
+Node *mul();
+Node *unary();
+Node *term();
 
-  if (tokens[pos].ty == TK_NUM)
-    return new_node_num(tokens[pos++].val);
+Node *program() {
+  int i = 0;
+  while (tokens[pos].ty != TK_EOF)
+    code[i++] = stmt();
+  code[i] = NULL;
+}
 
-  error_at(tokens[pos].input,
-      "数値でも開き括弧でもないトークンです");
+Node *stmt() {
+  Node *node = expr();
+  if (!consume(';'))
+    error_at(tokens[pos].input, "';'ではないトークンです");
+  return node;
+}
+
+Node *expr() {
+  return assign();
+}
+
+Node *assign() {
+  Node *node = equality();
+  if (consume('='))
+    node = new_node('=', node, assign());
+  return node;
 }
 
 Node *equality() {
@@ -116,20 +136,6 @@ Node *mul() {
   }
 }
 
-Node *expr() {
-  Node *node = equality();
-  return  node;
-
-  for (;;) {
-    if (consume('+'))
-      node = new_node('+', node, mul());
-    else if (consume('-'))
-      node = new_node('-', node, mul());
-    else
-      return node;
-  }
-}
-
 Node *unary() {
   if (consume('+'))
     return term();
@@ -137,6 +143,26 @@ Node *unary() {
     return new_node('-', new_node_num(0), term());
   return term();
 }
+
+Node *term() {
+  if (tokens[pos].ty == TK_IDENT)
+    return new_node_ident(&(tokens[pos].input));
+
+  if (consume('(')) {
+    Node *node = expr();
+    if (!consume(')'))
+      error_at(tokens[pos].input,
+        "開き括弧に対応する閉じ括弧がありません");
+    return node;
+  }
+
+  if (tokens[pos].ty == TK_NUM)
+    return new_node_num(tokens[pos++].val);
+
+  error_at(tokens[pos].input,
+      "数値でも開き括弧でもないトークンです");
+}
+
 
 
 void tokenize() {
@@ -148,6 +174,14 @@ void tokenize() {
       p++;
       continue;
     } 
+
+    if ('a' <= *p && *p <= 'z') {
+      tokens[i].ty = TK_IDENT;
+      tokens[i].input = p;
+      i++;
+      p++;
+      continue;
+    }
 
     if (*p == '=') {
       if (*(p + 1) == '=') {
@@ -171,7 +205,7 @@ void tokenize() {
       }
     }    
 
-    if (*p == '(' || *p == ')' || *p == '*' || *p == '/' || *p == '+' || *p == '-') {
+    if (*p == ';' || *p == '=' || *p == '(' || *p == ')' || *p == '*' || *p == '/' || *p == '+' || *p == '-') {
       tokens[i].ty = *p;
       tokens[i].input = p;
       i++;
