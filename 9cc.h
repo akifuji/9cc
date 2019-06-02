@@ -4,6 +4,7 @@
 enum {
   TK_NUM = 256,
   TK_EOF,
+  TK_RETURN,
   TK_EQ,
   TK_NE,
   TK_LE,
@@ -14,6 +15,7 @@ enum {
 enum {
   ND_NUM = 256,
   ND_IDENT,
+  ND_RETURN,
 };
 
 typedef struct Node {

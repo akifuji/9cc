@@ -20,14 +20,12 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Node *new_node_ident(char name) {
+Node *new_node_ident(char *name) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
-  node->name = name;
+  node->name = *name;
   return node;
 }
-
-
 
 typedef struct {
   int ty;      
@@ -43,6 +41,13 @@ int consume(int ty) {
     return 0;
   pos++;
   return 1;
+}
+
+int is_alnum(char c) {
+  return ('a' <= c && c <= 'z') ||
+         ('A' <= c && c <= 'Z') ||
+         ('0' <= c && c <= '9') ||
+         (c == '_');
 }
 
 Node *stmt();
@@ -63,7 +68,16 @@ Node *program() {
 }
 
 Node *stmt() {
-  Node *node = expr();
+  Node *node;
+
+ if (consume(TK_RETURN)) {
+   node = malloc(sizeof(Node));
+   node->ty = ND_RETURN;
+   node->lhs = expr();
+ } else {
+   node = expr();
+ }
+
   if (!consume(';'))
     error_at(tokens[pos].input, "';'ではないトークンです");
   return node;
@@ -146,7 +160,7 @@ Node *unary() {
 
 Node *term() {
   if (tokens[pos].ty == TK_IDENT)
-    return new_node_ident(&(tokens[pos].input));
+    return new_node_ident(tokens[pos++].input);
 
   if (consume('(')) {
     Node *node = expr();
@@ -163,8 +177,6 @@ Node *term() {
       "数値でも開き括弧でもないトークンです");
 }
 
-
-
 void tokenize() {
   char *p = user_input;
 
@@ -174,6 +186,14 @@ void tokenize() {
       p++;
       continue;
     } 
+
+    if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
+      tokens[i].ty = TK_RETURN;
+      tokens[i].input = p;
+      i++;
+      p += 6;
+      continue;
+    }
 
     if ('a' <= *p && *p <= 'z') {
       tokens[i].ty = TK_IDENT;

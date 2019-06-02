@@ -37,5 +37,7 @@ try 1 "3 == 3;"
 try 0 "1 == 3;"
 try 1 "1 != 3;"
 try 0 "3 != 3;"
+try 14 "a = 3; b = 5 * 6 - 8; a + b / 2;"
+try 14 "a = 3; b = 5 * 6 - 8; return a + b / 2; return 5;"
 
 echo OK
