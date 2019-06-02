@@ -26,6 +26,12 @@ typedef struct Node {
   char name;
 } Node;
 
+typedef struct Vector {
+  void **data;
+  int capacity;
+  int len;
+} Vector;
+
 char *user_input;
 Node *code[100];
 void tokenize();
@@ -33,5 +39,8 @@ Node *program();
 void gen(Node *node);
 void error(char *fmt, ...);
 void error_at(char *loc, char *msg);
+Vector *new_vector();
+void vec_push(Vector *vec, void *elem);
+void runtest();
 
 #endif
