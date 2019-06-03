@@ -23,7 +23,7 @@ typedef struct Node {
   struct Node *lhs;
   struct Node *rhs;
   int val;
-  char name;
+  char *name;
 } Node;
 
 typedef struct {
@@ -39,6 +39,7 @@ typedef struct {
 
 char *user_input;
 Node *code[100];
+Map *variables;
 void tokenize();
 Node *program();
 void gen(Node *node);

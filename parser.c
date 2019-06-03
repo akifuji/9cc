@@ -23,18 +23,20 @@ Node *new_node_num(int val) {
 Node *new_node_ident(char *name) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
-  node->name = *name;
+  node->name = name;
   return node;
 }
 
 typedef struct {
   int ty;      
   int val;    
+  char *name;
   char *input;
 } Token;
 
 Token tokens[100];
 int pos = 0;
+int variable_num = 0;
 
 int consume(int ty) {
   if (tokens[pos].ty != ty)
@@ -179,6 +181,7 @@ Node *term() {
 
 void tokenize() {
   char *p = user_input;
+  Map *variables = new_map();
 
   int i = 0;
   while (*p) {
@@ -195,6 +198,7 @@ void tokenize() {
       continue;
     }
 
+/*
     if ('a' <= *p && *p <= 'z') {
       tokens[i].ty = TK_IDENT;
       tokens[i].input = p;
@@ -202,6 +206,7 @@ void tokenize() {
       p++;
       continue;
     }
+*/
 
     if (*p == '=') {
       if (*(p + 1) == '=') {
@@ -269,7 +274,21 @@ void tokenize() {
       continue;
     }
 
-    error_at(p, "トークナイズできません");
+    if (map_get(variables, p) == NULL) {
+      printf("inside map_get: %s", p);
+      int val = variable_num * 8; 
+      map_put(variables, p, (void *)val);
+      variable_num++;
+    }
+  
+    printf("out of map_get: %s", p);
+    tokens[i].ty = TK_IDENT;
+    tokens[i].input = p;
+    tokens[i].name = p;
+    i++;
+    while(!isspace(*p)) {
+      p++;
+    }
   }
 
   tokens[i].ty = TK_EOF;
