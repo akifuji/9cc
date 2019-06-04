@@ -198,16 +198,6 @@ void tokenize() {
       continue;
     }
 
-/*
-    if ('a' <= *p && *p <= 'z') {
-      tokens[i].ty = TK_IDENT;
-      tokens[i].input = p;
-      i++;
-      p++;
-      continue;
-    }
-*/
-
     if (*p == '=') {
       if (*(p + 1) == '=') {
         tokens[i].ty = TK_EQ;
@@ -274,21 +264,30 @@ void tokenize() {
       continue;
     }
 
-    if (map_get(variables, p) == NULL) {
-      printf("inside map_get: %s", p);
-      int val = variable_num * 8; 
-      map_put(variables, p, (void *)val);
-      variable_num++;
-    }
+    if (('a' <= *p && *p <= 'z') || ('A' <= *p && *p <= 'Z') || (*p == '_')) {
+      int j = 1;
+      while (is_alnum(*(p + j))) {
+        j++;
+      }
+      char name[j+1];
+      strncpy(name, p, j);
+      name[j] = '\0';
+      
+      if (map_get(variables, name) == NULL) {
+        int val = variable_num * 8; 
+        map_put(variables, name, (void *)val);
+        variable_num++;
+      }
   
-    printf("out of map_get: %s", p);
-    tokens[i].ty = TK_IDENT;
-    tokens[i].input = p;
-    tokens[i].name = p;
-    i++;
-    while(!isspace(*p)) {
-      p++;
+      tokens[i].ty = TK_IDENT;
+      tokens[i].input = p;
+      tokens[i].name = name;
+      i++;
+      p += j;
+      continue;
     }
+    
+    error_at(p, "トークナイズできません");
   }
 
   tokens[i].ty = TK_EOF;
